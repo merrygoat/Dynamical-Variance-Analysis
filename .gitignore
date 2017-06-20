@@ -3,3 +3,5 @@ working_copy.ipynb
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+/__pycache__
