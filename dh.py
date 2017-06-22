@@ -14,7 +14,7 @@ def loadimages(num_images, image_directory, file_prefix, file_suffix):
     num_files, image_shape = setup_load_images(num_images, image_directory, file_prefix, file_suffix)
 
     tmp_file = TemporaryFile()
-    imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(num_files, image_shape[0], image_shape[1]))
+    imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(num_files, image_shape[1], image_shape[0]))
 
     for i in range(num_files):
         tmp_image = Image.open(image_directory + file_prefix + '{:04d}'.format(i) + file_suffix)
@@ -60,7 +60,7 @@ def variance(array):
     return np.var(array)
 
 
-def dynamical_heterogenity(images_to_load, cutoff, image_directory, file_prefix, file_suffix):
+def dynamical_heterogenity(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_particles):
 
     # Load the images
     image_list, numimages = loadimages(images_to_load, image_directory, file_prefix, file_suffix)
@@ -92,14 +92,11 @@ def dynamical_heterogenity(images_to_load, cutoff, image_directory, file_prefix,
     # Normalisation
     raw_variance[1:] /= samplecount[1:]
     square_variance[1:] /= samplecount[1:]
-    #long_time_plateau = raw_variance[int(numimages*0.8)]
-    #normed_variance = 1-(raw_variance/long_time_plateau)
+    asymptotic_variance = raw_variance[int(numimages*0.8)]
+    #normed_variance = 1-(raw_variance/asymptotic_variance)
     #plt.semilogx(bins[1:], normed_variance[1:])
     
     variance_squared = raw_variance ** 2
-    
-    num_particles = 590
-    asymptotic_variance = 940
     
     chi_squared = (square_variance - variance_squared)*num_particles/(asymptotic_variance**2)
     plt.semilogx(bins[1:], chi_squared[1:], marker="*")

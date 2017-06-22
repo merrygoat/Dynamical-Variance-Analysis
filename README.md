@@ -11,6 +11,7 @@ Parameters are:
 * image_directory -	Directory path of images to analyse, end with slash
 * file_prefix     - Prefix for file. Program assumes files are numbered sequentially from 0 with 4 digits i.e. image_0000.png, image_0001.png...
 * file_suffix     - Image file type, ".png" or ".tif" are know to work. Other formats untested.
+* num_particles   - Average number of particles in the images, used for normalisation.
 
 Required libraries: numpy, matplotlib, numba, tqdm, pillow
 For the example file: IPython Notebook
