@@ -101,3 +101,5 @@ def dynamical_heterogenity(images_to_load, cutoff, image_directory, file_prefix,
     chi_squared = (square_variance - variance_squared)*num_particles/(asymptotic_variance**2)
     plt.semilogx(bins[1:], chi_squared[1:], marker="*")
     plt.show()
+
+    np.savetxt("chi4.txt", chi_squared[1:])

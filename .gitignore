@@ -5,3 +5,4 @@ working_copy.ipynb
 .ipynb_checkpoints
 
 /__pycache__
+*.txt
