@@ -2,7 +2,7 @@
 
 Based on method in Pastore, R. et al. Differential Variance Analysis: a direct method to quantify and visualize dynamic heterogeneities, Sci Rep. 2017; 7: 43496.
 
-Main routine is called dynamical_heterogeneity. Example IPython Notebook shows usage.
+IPython Notebook shows example of usage.
 
 Parameters are:
 	
@@ -15,5 +15,3 @@ Parameters are:
 
 Required libraries: numpy, matplotlib, numba, tqdm, pillow
 For the example file: IPython Notebook
-
-Beware: This code nearly works though the normalisation isn't quite right yet.

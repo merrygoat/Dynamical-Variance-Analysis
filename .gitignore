@@ -4,5 +4,6 @@ working_copy.ipynb
 # Jupyter Notebook
 .ipynb_checkpoints
 
+.idea/
 /__pycache__
 *.txt
