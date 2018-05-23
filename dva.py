@@ -67,7 +67,7 @@ def main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_
     square_variance = np.zeros(numimages)
     samplecount = np.zeros(numimages)
     
-    if cutoff > images_to_load:
+    if cutoff > images_to_load or cutoff == 0:
         cutoff = images_to_load
 
     loop_counter = 0
