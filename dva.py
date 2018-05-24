@@ -2,49 +2,55 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
+
 from tqdm import tqdm
 from tempfile import TemporaryFile
 import numba
 
 
-def loadimages(num_images, image_directory, file_prefix, file_suffix):
+def loadimages(num_images, image_directory, file_prefix, file_suffix, image_offset, sample_rate):
     """Loads images and corrects for bleaching"""
-    print("Loading images.")
+    first_image_intensity = 0
 
-    num_files, image_shape = setup_load_images(num_images, image_directory, file_prefix, file_suffix)
+    print("Loading images.")
+    if num_images == 0:
+        num_images = setup_load_images(image_directory, file_prefix, file_suffix)
+    image_shape = get_image_shape(image_directory, file_prefix, file_suffix)
 
     tmp_file = TemporaryFile()
-    imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(num_files, image_shape[1], image_shape[0]))
+    imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(int(num_images), image_shape[1], image_shape[0]))
 
-    for image_number in range(num_files):
-        tmp_image = Image.open(image_directory + file_prefix + '{:04d}'.format(image_number) + file_suffix)
+    for image_index in range(0, num_images):
+        image_number = image_index * sample_rate + image_offset
+        tmp_image = Image.open('{}{}{:04d}{}'.format(image_directory, file_prefix, image_number, file_suffix))
         tmp_array = np.array(tmp_image.copy())
 
         # Correct for bleaching by averaging the brightness across all images
-        if image_number == 0:
-            first_mean = np.mean(tmp_array)
+        if image_index == 0:
+            first_image_intensity = np.mean(tmp_array)
         else:
             tmp_mean = np.mean(tmp_array)
-            tmp_array = tmp_array * (first_mean / tmp_mean)
+            tmp_array = tmp_array * (first_image_intensity / tmp_mean)
 
-        imagelist[image_number] = tmp_array
+        imagelist[image_index] = tmp_array
 
-    return imagelist, num_files
+    return imagelist, num_images
 
 
-def setup_load_images(num_images, image_directory, file_prefix, file_suffix):
+def get_image_shape(image_directory, file_prefix, file_suffix):
+    tmp_img = Image.open(image_directory + file_prefix + "0000" + file_suffix)
+    return tmp_img.size
+
+
+def setup_load_images(image_directory, file_prefix, file_suffix):
     """Globs the image directory to see how many files are there and loads the first image to
     determine its dimensions"""
+    file_list = glob(image_directory + file_prefix + "*" + file_suffix)
+    num_images = len(file_list)
     if num_images == 0:
-        file_list = glob(image_directory + file_prefix + "*" + file_suffix)
-        if len(file_list) == 0:
-            print("No files found.")
-            raise FileNotFoundError
-
-    tmp_img = Image.open(image_directory + file_prefix + "0000" + file_suffix)
-    image_shape = tmp_img.size
-
-    return num_images, image_shape
+        print("No files found.")
+        raise FileNotFoundError
+    return num_images
 
 
 @numba.jit
@@ -57,10 +63,10 @@ def get_variance(array):
     return np.var(array)
 
 
-def main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_particles):
+def main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_particles, image_offset, sample_rate):
 
     # Load the images
-    image_list, numimages = loadimages(images_to_load, image_directory, file_prefix, file_suffix)
+    image_list, numimages = loadimages(images_to_load, image_directory, file_prefix, file_suffix, image_offset, sample_rate)
     print("Image Loading complete. Beginning analysis.")
     
     raw_variance = np.zeros(numimages)
@@ -85,11 +91,14 @@ def main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_
         loop_counter = 0
     pbar.close()
 
-    chi_squared = do_normalisation(num_particles, numimages, raw_variance, samplecount, square_variance)
+    chi_squared = np.zeros((numimages, 2))
+    chi_squared[:, 0] = np.arange(0, numimages, 1) * sample_rate
+    chi_squared[:, 1] = do_normalisation(num_particles, numimages, raw_variance, samplecount, square_variance)
 
-    plot_chi_squared(chi_squared, numimages)
+    # plt.semilogx(chi_squared[0:], chi_squared[1:], marker="*")
+    # plt.show()
 
-    np.savetxt("chi4.txt", chi_squared[1:])
+    np.savetxt("chi4_offset{:04d}_sample_rate{:d}.txt".format(image_offset, sample_rate), chi_squared, fmt=['%d', '%1.5f'])
 
 
 def do_normalisation(num_particles, numimages, raw_variance, samplecount, square_variance):
@@ -101,7 +110,15 @@ def do_normalisation(num_particles, numimages, raw_variance, samplecount, square
     return chi_squared
 
 
-def plot_chi_squared(chi_squared, numimages):
-    bins = np.arange(0, numimages, 1)
-    plt.semilogx(bins[1:], chi_squared[1:], marker="*")
-    plt.show()
+if __name__ == '__main__':
+    images_to_load = 1000
+    cutoff = 0
+    image_directory = "F:/sample DH/Pastore/Raw Images/images/"
+    file_prefix = "vacq00_vf071"
+    file_suffix = ".tif"
+    num_particles = 600
+    offsets_list = [0]
+    sample_rate = 10
+
+    for offset in offsets_list:
+        main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_particles, offset, sample_rate)
