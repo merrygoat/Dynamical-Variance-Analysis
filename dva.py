@@ -1,8 +1,6 @@
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 from glob import glob
-
 from tqdm import tqdm
 from tempfile import TemporaryFile
 import numba
@@ -17,8 +15,11 @@ def loadimages(num_images, image_directory, file_prefix, file_suffix, image_offs
         num_images = setup_load_images(image_directory, file_prefix, file_suffix)
     image_shape = get_image_shape(image_directory, file_prefix, file_suffix)
 
-    tmp_file = TemporaryFile()
-    imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(int(num_images), image_shape[1], image_shape[0]))
+    if num_images <= 1000:
+        imagelist = np.empty((int(num_images), image_shape[1], image_shape[0]), dtype=np.int8)
+    else:
+        tmp_file = TemporaryFile()
+        imagelist = np.memmap(tmp_file, mode='w+', dtype=np.int8, shape=(int(num_images), image_shape[1], image_shape[0]))
 
     for image_index in range(0, num_images):
         image_number = image_index * sample_rate + image_offset
@@ -53,7 +54,6 @@ def setup_load_images(image_directory, file_prefix, file_suffix):
     return num_images
 
 
-@numba.jit
 def get_image_difference(image1, image2):
     return image1 - image2
 
@@ -94,9 +94,6 @@ def main(images_to_load, cutoff, image_directory, file_prefix, file_suffix, num_
     chi_squared = np.zeros((numimages, 2))
     chi_squared[:, 0] = np.arange(0, numimages, 1) * sample_rate
     chi_squared[:, 1] = do_normalisation(num_particles, numimages, raw_variance, samplecount, square_variance)
-
-    # plt.semilogx(chi_squared[0:], chi_squared[1:], marker="*")
-    # plt.show()
 
     np.savetxt("chi4_offset{:04d}_sample_rate{:d}.txt".format(image_offset, sample_rate), chi_squared, fmt=['%d', '%1.5f'])
 
